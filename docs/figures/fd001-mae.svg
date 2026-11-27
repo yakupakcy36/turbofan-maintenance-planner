@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 216" role="img" aria-labelledby="title description">
+  <title id="title">Mean absolute error on NASA FD001</title>
+  <desc id="description">The age-only baseline had 28.39 cycles of error. The sensor-history model had 15.53 cycles of error on the same 100 simulated test engines.</desc>
+  <rect x="1" y="1" width="758" height="214" rx="14" fill="#f8fafc" stroke="#d8e1e8"/>
+  <g font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+    <text x="30" y="38" font-size="21" font-weight="700" fill="#172b3e">Mean absolute error</text>
+    <text x="30" y="63" font-size="14" fill="#46596c">NASA C-MAPSS FD001 · 100 simulated test engines</text>
+    <g stroke="#d8e1e8">
+      <path d="M240 82v92 M380 82v92 M520 82v92 M660 82v92"/>
+    </g>
+    <g font-size="14" fill="#172b3e">
+      <text x="30" y="108">Age-only baseline</text>
+      <text x="30" y="150">Sensor history</text>
+    </g>
+    <rect x="240" y="89" width="397.46" height="27" rx="4" fill="#52677e"/>
+    <rect x="240" y="131" width="217.42" height="27" rx="4" fill="#086c61"/>
+    <g font-size="15" font-weight="700" fill="#ffffff" text-anchor="end">
+      <text x="627" y="108">28.39</text>
+      <text x="447" y="150">15.53</text>
+    </g>
+    <g font-size="12" fill="#46596c" text-anchor="middle">
+      <text x="240" y="193">0</text>
+      <text x="380" y="193">10</text>
+      <text x="520" y="193">20</text>
+      <text x="660" y="193">30</text>
+    </g>
+    <text x="684" y="193" font-size="12" fill="#46596c">cycles</text>
+  </g>
+</svg>

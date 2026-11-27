@@ -4,6 +4,8 @@ Estimate the **remaining useful life (RUL)** of a simulated turbofan engine from
 
 ## FD001 results
 
+![The sensor-history model reduced mean absolute error from 28.39 to 15.53 cycles on 100 simulated NASA FD001 test engines.](docs/figures/fd001-mae.svg)
+
 | Method | MAE (cycles) | RMSE (cycles) |
 | --- | ---: | ---: |
 | Sensor history | **15.53** | **19.65** |
