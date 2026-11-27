@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "turbofan-maintenance-planner"
 version = "0.1.0"
 description = "Offline remaining useful life estimation for simulated turbofan trajectories"
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy==2.2.6",
@@ -14,6 +15,9 @@ dependencies = [
     "joblib==1.5.2",
     "threadpoolctl==3.6.0",
 ]
+
+[project.scripts]
+turbofan-rul = "turbofan_rul.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

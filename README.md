@@ -1,0 +1,44 @@
+# Turbofan Maintenance Planner
+
+Estimate the **remaining useful life (RUL)** of a simulated turbofan engine from its observed sensor history. Rank a fleet for maintenance review and see how the sensor model compares with an age-only rule.
+
+## Reproduce the benchmark
+
+Use Python 3.12 and install the project from the repository directory.
+
+```sh
+python -m pip install .
+turbofan-rul fetch data/cmapss.zip
+turbofan-rul benchmark data/cmapss.zip --out reports/fd001
+```
+
+The benchmark writes a new directory with three files.
+
+| File | Contents |
+| --- | --- |
+| `report.json` | Dataset SHA-256, engine splits, MAE, RMSE, interval coverage and maintenance review counts |
+| `fleet.csv` | One row per test engine with the estimate, prediction interval, review status, age baseline and actual RUL |
+| `model.json` | Versioned numeric coefficients and calibration parameters for offline scoring |
+
+You can also download these files from the **fd001-maintenance-report** artifact in a successful [GitHub Actions run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/workflows/verify.yml). The dataset stays outside the repository.
+
+## Assess an engine history offline
+
+```sh
+turbofan-rul assess reports/fd001/model.json telemetry.txt --horizon 30 > assessment.csv
+```
+
+The input uses FD001's 26 whitespace-delimited fields. Each row contains the unit ID, cycle, three operating settings and 21 sensor readings. Sort by unit and supply consecutive observed cycles starting at one. The last observed cycle determines each forecast. Histories shorter than 20 cycles are reported as `insufficient_history`. `test_FD001.txt`, inside the NASA bundle's inner ZIP, can be used as an example input.
+
+Engines are ranked by the lower bound of their interval, then their point estimate. The default 30-cycle rule marks an engine `review` if the lower bound is within the horizon. The report counts both missed due engines and flags outside the horizon so the cost of a wider interval is visible.
+
+## Evaluation design
+
+- **Source.** NASA C-MAPSS FD001 contains 100 simulated run-to-failure training engines and 100 official test engines recorded up to an earlier cutoff. It covers one operating condition and one high-pressure compressor degradation mode. [NASA dataset catalog](https://catalog.data.gov/dataset/cmapss-jet-engine-simulated-data)
+- **Fitting.** Features use the current cycle and the sensor levels and trends over the last 20 observed cycles. Ridge regression is fitted on 75 complete training engines with equal aggregate weight per engine. Training targets are capped at 125 cycles. The baseline subtracts current age from the fit engines' median lifetime and uses the same prediction bounds.
+- **Calibration.** The other 25 training engines each contribute one reproducibly sampled pre-failure cutoff. A 90% split-conformal interval is calibrated from their absolute residuals. Its measured coverage on the official cutoffs is reported separately because the cutoff mechanism can differ.
+- **Holdout.** Official labels enter only the evaluation. Both methods are scored against the original uncapped RUL at one cutoff per test engine. The CI comparison and saved-model round-trip run on GitHub Actions.
+
+These results describe the FD001 simulation. Field validation and aircraft maintenance use are outside the project scope.
+
+The dataset is credited to A. Saxena and K. Goebel (2008), *Turbofan Engine Degradation Simulation Data Set*, NASA Ames Prognostics Data Repository. [NASA repository](https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/)
