@@ -4,9 +4,9 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from .dataset import Trajectory, supports_fd001_conditions
-from .features import WINDOW
-from .model import LifeModel
+from .dataset import Trajectory
+from .features import InsufficientHistoryError
+from .model import LifeModel, UnsupportedConditionsError
 
 
 REVIEW_CANDIDATES = {"review", "deferred"}
@@ -32,13 +32,14 @@ def assess(
 ) -> list[Forecast]:
     forecasts = []
     for engine in engines:
-        if not supports_fd001_conditions(engine):
+        try:
+            estimate, lower, upper = model.estimate(engine, engine.cycles)
+        except UnsupportedConditionsError:
             forecasts.append(Forecast(engine.unit, engine.cycles, "unsupported_conditions"))
             continue
-        if engine.cycles < WINDOW:
+        except InsufficientHistoryError:
             forecasts.append(Forecast(engine.unit, engine.cycles, "insufficient_history"))
             continue
-        estimate, lower, upper = model.estimate(engine, engine.cycles)
         status = "review" if lower <= horizon else "monitor"
         forecasts.append(Forecast(engine.unit, engine.cycles, status, estimate, lower, upper))
     forecasts.sort(key=lambda item: (

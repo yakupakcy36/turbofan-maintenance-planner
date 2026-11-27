@@ -4,10 +4,23 @@ import numpy as np
 
 from turbofan_rul.dataset import SENSOR_COUNT, Trajectory
 from turbofan_rul.features import FEATURE_COUNT, WINDOW, features_at
-from turbofan_rul.model import LifeModel, conformal_radius, split_engines
+from turbofan_rul.model import LifeModel, UnsupportedConditionsError, conformal_radius, split_engines
 
 
 class ModelTest(unittest.TestCase):
+    def test_direct_forecasts_check_only_the_observed_operating_settings(self):
+        model = LifeModel(np.zeros(FEATURE_COUNT), np.ones(FEATURE_COUNT),
+                          np.zeros(FEATURE_COUNT), 45, 5, 80)
+        settings = np.tile([0.0, 0.0, 100.0], (WINDOW + 1, 1))
+        settings[-1, 0] = 20.0
+        engine = Trajectory(1, np.zeros((WINDOW + 1, SENSOR_COUNT)), settings)
+        self.assertEqual(model.point(engine, WINDOW), 45)
+        self.assertEqual(model.estimate(engine, WINDOW), (45, 40, 50))
+        for forecast in (model.point, model.estimate):
+            with self.subTest(method=forecast.__name__):
+                with self.assertRaisesRegex(UnsupportedConditionsError, "outside FD001"):
+                    forecast(engine, WINDOW + 1)
+
     def test_feature_snapshot_is_independent_of_future_rows(self):
         history = np.arange((WINDOW + 3) * SENSOR_COUNT).reshape(-1, SENSOR_COUNT)
         settings = np.tile([0.0, 0.0, 100.0], (len(history), 1))

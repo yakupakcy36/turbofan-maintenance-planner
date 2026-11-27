@@ -51,6 +51,8 @@ The input uses FD001's 26 whitespace-delimited fields. Each row contains the uni
 
 The supported ranges for the three operating settings are −0.0088 to 0.0088, −0.0007 to 0.0007, and 99.9999 to 100.0001. They come from the FD001 fitting engines with one input step of tolerance. An out-of-range cycle anywhere in a history yields `unsupported_conditions`, with blank RUL fields and no review slot. Each compatible engine in the same file is still scored. The guard checks operating settings. The evaluation covers the FD001 degradation mode.
 
+The Python methods `LifeModel.point()` and `LifeModel.estimate()` raise `UnsupportedConditionsError` when settings fall outside those ranges through the requested cycle. Later observations are excluded when scoring an earlier cutoff.
+
 Engines are ranked by the lower bound of their interval, then their point estimate and unit ID. The default 30-cycle rule marks an engine `review` if its lower bound is within the horizon. An optional `--review-limit` keeps only the highest-ranked candidates in `review` and marks the others `deferred`. A limit of zero defers every eligible engine.
 
 Pass the same limit to `benchmark` to evaluate a planned workload. In `report.json`, `flagged` counts every eligible engine and `scheduled` counts those assigned a review slot. `missed_due` counts engines due within the horizon without a review slot, including any due engines marked `deferred` or `monitor`.

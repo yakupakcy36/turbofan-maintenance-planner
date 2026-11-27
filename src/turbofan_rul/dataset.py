@@ -44,11 +44,12 @@ class FD001:
     archive_sha256: str
 
 
-def supports_fd001_conditions(engine: Trajectory) -> bool:
+def supports_fd001_conditions(engine: Trajectory, *, through_cycle: int | None = None) -> bool:
     settings = engine.operating_settings
-    return settings.shape == (engine.cycles, 3) and bool(
-        np.all((settings >= FD001_SETTINGS_MIN) & (settings <= FD001_SETTINGS_MAX))
-    )
+    if settings.shape != (engine.cycles, 3):
+        return False
+    observed = settings[:through_cycle]
+    return bool(np.all((observed >= FD001_SETTINGS_MIN) & (observed <= FD001_SETTINGS_MAX)))
 
 
 def read_bounded(path: Path, limit: int) -> bytes:

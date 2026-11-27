@@ -70,9 +70,13 @@ class EvaluationTest(unittest.TestCase):
         supported = trajectory(2, 80)
         outside_fd001 = trajectory(1, 95)
         outside_fd001.operating_settings[0, 0] = 20.0
+        short_outside_fd001 = trajectory(3, 19)
+        short_outside_fd001.operating_settings[0, 0] = 20.0
 
-        ranked = assess(self.model, (outside_fd001, supported), 30, review_limit=1)
+        ranked = assess(self.model, (outside_fd001, supported, short_outside_fd001), 30,
+                        review_limit=1)
         self.assertEqual([(row.unit, row.review_status) for row in ranked],
-                         [(2, "review"), (1, "unsupported_conditions")])
+                         [(2, "review"), (1, "unsupported_conditions"),
+                          (3, "unsupported_conditions")])
         self.assertEqual((ranked[1].estimate, ranked[1].lower, ranked[1].upper),
                          (None, None, None))

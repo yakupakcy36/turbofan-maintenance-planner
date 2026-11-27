@@ -6,7 +6,7 @@ import math
 import numpy as np
 from sklearn.linear_model import Ridge
 
-from .dataset import Trajectory
+from .dataset import Trajectory, supports_fd001_conditions
 from .features import FEATURE_COUNT, WINDOW, features_at
 
 
@@ -14,6 +14,10 @@ TARGET_CAP = 125
 TRAINING_STRIDE = 5
 CALIBRATION_COVERAGE = 0.90
 MODEL_SCHEMA = 1
+
+
+class UnsupportedConditionsError(ValueError):
+    """The observed operating settings fall outside the FD001 model scope."""
 
 
 @dataclass(frozen=True)
@@ -26,6 +30,8 @@ class LifeModel:
     baseline_lifetime: float
 
     def point(self, engine: Trajectory, cycle: int) -> float:
+        if not supports_fd001_conditions(engine, through_cycle=cycle):
+            raise UnsupportedConditionsError(f"unit {engine.unit} has settings outside FD001")
         vector = features_at(engine, cycle)
         estimate = ((vector - self.center) / self.scale) @ self.coefficients + self.intercept
         return float(np.clip(estimate, 0, TARGET_CAP))
