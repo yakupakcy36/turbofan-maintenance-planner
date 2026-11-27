@@ -29,7 +29,7 @@ jobs:
       - name: Fetch NASA archive
         run: turbofan-rul fetch "$RUNNER_TEMP/cmapss.zip"
       - name: Evaluate official held-out engines
-        run: turbofan-rul benchmark "$RUNNER_TEMP/cmapss.zip" --out reports/fd001
+        run: turbofan-rul benchmark "$RUNNER_TEMP/cmapss.zip" --horizon 30 --out reports/fd001
       - name: Verify the saved model through the CLI
         shell: bash
         run: |
@@ -38,7 +38,7 @@ jobs:
           printf '```\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Verify a 25-engine review limit
         run: |
-          turbofan-rul benchmark "$RUNNER_TEMP/cmapss.zip" --review-limit 25 --out "$RUNNER_TEMP/capacity-25"
+          turbofan-rul benchmark "$RUNNER_TEMP/cmapss.zip" --horizon 30 --review-limit 25 --out "$RUNNER_TEMP/capacity-25"
           python tests/verify_benchmark.py "$RUNNER_TEMP/cmapss.zip" "$RUNNER_TEMP/capacity-25"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

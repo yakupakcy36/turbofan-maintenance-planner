@@ -4,6 +4,11 @@ from verify_benchmark import verify_review_outcomes
 
 
 class BenchmarkGateTest(unittest.TestCase):
+    def test_changed_horizon_cannot_skip_the_capacity_gate(self):
+        report = {"review": {"horizon_cycles": 31}}
+        with self.assertRaisesRegex(RuntimeError, "expected a 30-cycle benchmark horizon, got 31"):
+            verify_review_outcomes(report, [], {})
+
     def test_regressed_queue_fails_even_when_its_report_matches(self):
         labels = {unit: 31 if unit <= 25 else 30 for unit in range(1, 51)}
         fleet = [

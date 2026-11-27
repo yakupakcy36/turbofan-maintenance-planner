@@ -10,7 +10,8 @@ from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 
-# Reference capture on the pinned FD001 archive at a 30-cycle horizon.
+BENCHMARK_HORIZON = 30
+# Reference capture on the pinned FD001 archive at the benchmark horizon.
 MINIMUM_DUE_CAPTURE = {10: 10, 25: 22, 50: 25}
 
 
@@ -43,6 +44,8 @@ def verify_mixed_regimes(bundle: ZipFile, model: Path, telemetry: Path) -> None:
 def verify_review_outcomes(report: dict, fleet: list[dict], actual_by_unit: dict[int, int]) -> None:
     review = report["review"]
     horizon = review["horizon_cycles"]
+    if horizon != BENCHMARK_HORIZON:
+        raise RuntimeError(f"expected a {BENCHMARK_HORIZON}-cycle benchmark horizon, got {horizon}")
     units = [int(row["unit"]) for row in fleet]
     if len(units) != len(actual_by_unit) or set(units) != set(actual_by_unit):
         raise RuntimeError("fleet must contain each official unit exactly once")
@@ -69,7 +72,7 @@ def verify_review_outcomes(report: dict, fleet: list[dict], actual_by_unit: dict
         )
         if any(plan[key] != count for key, count in expected.items()):
             raise RuntimeError(f"review counts do not match the fleet for capacity {plan['limit']}")
-        if horizon == 30 and plan["limit"] in MINIMUM_DUE_CAPTURE:
+        if plan["limit"] in MINIMUM_DUE_CAPTURE:
             minimum = MINIMUM_DUE_CAPTURE[plan["limit"]]
             if captured < minimum:
                 raise RuntimeError(
