@@ -18,7 +18,7 @@ Estimate the **remaining useful life (RUL)** of a simulated turbofan engine from
 | 50 | 50 | 25 of 25 | 0 | 25 |
 | Unlimited | 68 | 25 of 25 | 0 | 43 |
 
-The calibrated intervals covered 100 of 100 observed outcomes and averaged 120.47 cycles wide. The wide intervals make the review rule conservative and increase the review workload. [Recorded benchmark and downloadable report](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/46000102681)
+The calibrated intervals covered 100 of 100 observed outcomes and averaged 120.47 cycles wide. The wide intervals make the review rule conservative and increase the review workload. [Public JSON report](docs/fd001-review-summary.json) · [Verification run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/46001465805)
 
 ## Reproduce the benchmark
 
@@ -38,7 +38,7 @@ The benchmark writes a new directory with three files.
 | `fleet.csv` | One row per test engine with the estimate, prediction interval, review status, age baseline and actual RUL |
 | `model.json` | Versioned numeric coefficients and calibration parameters for offline scoring |
 
-You can also download these files from the **fd001-maintenance-report** artifact in a successful [GitHub Actions run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/workflows/verify.yml). The dataset stays outside the repository. Fetch and evaluation check its SHA-256 against the verified NASA archive.
+Sign in to GitHub to download these files from the **fd001-maintenance-report** artifact in a successful [GitHub Actions run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/workflows/verify.yml). The [public summary](docs/fd001-review-summary.json) can be opened directly from the repository. Fetch and evaluation check the NASA archive against its verified SHA-256.
 
 ## Assess an engine history offline
 

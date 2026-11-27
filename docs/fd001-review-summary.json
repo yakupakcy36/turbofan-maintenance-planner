@@ -1,0 +1,82 @@
+{
+  "dataset": "NASA C-MAPSS FD001",
+  "verified_commit": "1dad3890936cc0e64d4fe25d32b91096637b0578",
+  "workflow_run": "https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/46001465805",
+  "engines": 100,
+  "archive_sha256": "c9c5dec12a945a82e8bb4446589d7fb3cc057b5e5d81fa1a12e25ee9912ad3b2",
+  "fit_operating_settings": {
+    "min": [
+      -0.0087,
+      -0.0006,
+      100
+    ],
+    "max": [
+      0.0087,
+      0.0006,
+      100
+    ]
+  },
+  "sensor_model": {
+    "mae_cycles": 15.531571532693157,
+    "rmse_cycles": 19.649226637302615
+  },
+  "age_baseline": {
+    "mae_cycles": 28.39,
+    "rmse_cycles": 37.96221805953915
+  },
+  "interval": {
+    "empirical_coverage": 1,
+    "mean_width_cycles": 120.47017904655765
+  },
+  "review": {
+    "horizon_cycles": 30,
+    "flagged": 68,
+    "scheduled": 68,
+    "deferred": 0,
+    "due_within_horizon": 25,
+    "due_scheduled": 25,
+    "due_deferred": 0,
+    "missed_due": 0,
+    "flagged_outside_horizon": 43,
+    "scheduled_outside_horizon": 43,
+    "limit": null
+  },
+  "review_capacity_scenarios": [
+    {
+      "limit": 10,
+      "flagged": 68,
+      "scheduled": 10,
+      "deferred": 58,
+      "due_within_horizon": 25,
+      "due_scheduled": 10,
+      "due_deferred": 15,
+      "missed_due": 15,
+      "flagged_outside_horizon": 43,
+      "scheduled_outside_horizon": 0
+    },
+    {
+      "limit": 25,
+      "flagged": 68,
+      "scheduled": 25,
+      "deferred": 43,
+      "due_within_horizon": 25,
+      "due_scheduled": 22,
+      "due_deferred": 3,
+      "missed_due": 3,
+      "flagged_outside_horizon": 43,
+      "scheduled_outside_horizon": 3
+    },
+    {
+      "limit": 50,
+      "flagged": 68,
+      "scheduled": 50,
+      "deferred": 18,
+      "due_within_horizon": 25,
+      "due_scheduled": 25,
+      "due_deferred": 0,
+      "missed_due": 0,
+      "flagged_outside_horizon": 43,
+      "scheduled_outside_horizon": 25
+    }
+  ]
+}
