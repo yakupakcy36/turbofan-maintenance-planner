@@ -8,6 +8,11 @@ from turbofan_rul.features import FEATURE_COUNT
 from turbofan_rul.model import LifeModel
 
 
+def trajectory(unit, cycles):
+    return Trajectory(unit, np.zeros((cycles, SENSOR_COUNT)),
+                      np.tile([0.0, 0.0, 100.0], (cycles, 1)))
+
+
 class EvaluationTest(unittest.TestCase):
     def setUp(self):
         coefficients = np.zeros(FEATURE_COUNT)
@@ -16,7 +21,7 @@ class EvaluationTest(unittest.TestCase):
                                coefficients, 100, 10, 100)
 
     def test_rank_respects_the_lower_bound_and_marks_short_history(self):
-        engines = tuple(Trajectory(i, np.zeros((cycles, SENSOR_COUNT)))
+        engines = tuple(trajectory(i, cycles)
                         for i, cycles in enumerate((40, 80, 19), start=1))
         plans = assess(self.model, engines, 30)
         self.assertEqual([row.unit for row in plans], [2, 1, 3])
@@ -24,7 +29,7 @@ class EvaluationTest(unittest.TestCase):
                          ["review", "monitor", "insufficient_history"])
 
     def test_score_uses_outcomes_linked_by_engine_id(self):
-        engines = tuple(Trajectory(i, np.zeros((cycles, SENSOR_COUNT)))
+        engines = tuple(trajectory(i, cycles)
                         for i, cycles in enumerate((70, 80), start=1))
         forecasts = assess(self.model, engines, 20)
         report = score(self.model, forecasts, {1: 31, 2: 19}, 20)
@@ -34,7 +39,7 @@ class EvaluationTest(unittest.TestCase):
         self.assertEqual(report["review"]["missed_due"], 0)
 
     def test_review_limit_uses_stable_order_and_keeps_other_statuses(self):
-        engines = tuple(Trajectory(unit, np.zeros((cycles, SENSOR_COUNT)))
+        engines = tuple(trajectory(unit, cycles)
                         for unit, cycles in ((4, 19), (3, 40), (2, 80), (1, 80)))
         limited = assess(self.model, engines, 30, review_limit=1)
         self.assertEqual([row.unit for row in limited], [1, 2, 3, 4])
@@ -47,7 +52,7 @@ class EvaluationTest(unittest.TestCase):
             assess(self.model, engines, 30, review_limit=-1)
 
     def test_capacity_report_distinguishes_flags_from_reviewed_engines(self):
-        engines = tuple(Trajectory(i, np.zeros((cycles, SENSOR_COUNT)))
+        engines = tuple(trajectory(i, cycles)
                         for i, cycles in enumerate((90, 80, 40), start=1))
         limited = assess(self.model, engines, 30, review_limit=1)
         report = score(self.model, limited, {1: 31, 2: 29, 3: 28}, 30)

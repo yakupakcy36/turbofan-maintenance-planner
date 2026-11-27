@@ -23,6 +23,7 @@ class DatasetTest(unittest.TestCase):
         histories = parse_trajectories(raw, "sample")
         self.assertEqual([(item.unit, item.cycles) for item in histories], [(1, 2), (3, 1)])
         self.assertEqual(histories[0].sensors[1, -1], 20.0)
+        self.assertEqual(histories[0].operating_settings.tolist(), [[0, 0, 100], [0, 0, 100]])
 
     def test_rejects_a_gap_duplicate_or_engine_out_of_order(self):
         for records in ((row(1, 1), row(1, 3)), (row(1, 1), row(1, 1)),

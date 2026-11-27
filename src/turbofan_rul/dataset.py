@@ -26,6 +26,7 @@ ENGINE_COUNT = 100
 class Trajectory:
     unit: int
     sensors: np.ndarray
+    operating_settings: np.ndarray
 
     @property
     def cycles(self) -> int:
@@ -97,7 +98,7 @@ def parse_trajectories(content: bytes, name: str) -> tuple[Trajectory, ...]:
         unit = int(block[0, 0])
         if unit <= last_unit or not np.array_equal(block[:, 1], np.arange(1, len(block) + 1)):
             raise ValueError(f"{name} must contain ascending units and consecutive cycles from one")
-        histories.append(Trajectory(unit, block[:, 5:].copy()))
+        histories.append(Trajectory(unit, block[:, 5:].copy(), block[:, 2:5].copy()))
         last_unit = unit
     return tuple(histories)
 

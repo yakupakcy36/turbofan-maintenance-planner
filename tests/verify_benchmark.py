@@ -57,6 +57,6 @@ def verify(archive: Path, output: Path) -> dict:
 if __name__ == "__main__":
     results = verify(Path(sys.argv[1]), Path(sys.argv[2]))
     print(json.dumps({key: results[key] for key in (
-        "engines", "archive_sha256", "sensor_model", "age_baseline", "interval", "review",
+        "engines", "archive_sha256", "fit_operating_settings", "sensor_model", "age_baseline", "interval", "review",
         "review_capacity_scenarios",
     )}, indent=2))

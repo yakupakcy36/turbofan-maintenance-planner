@@ -9,6 +9,8 @@ import sys
 from tempfile import TemporaryDirectory
 from urllib.request import urlopen
 
+import numpy as np
+
 from .dataset import (
     ARCHIVE_LIMIT,
     NASA_ARCHIVE_URL,
@@ -70,10 +72,18 @@ def benchmark(
               zip(dataset.test, dataset.test_rul, strict=True)}
     report = score(model, forecasts, actual, horizon)
     report["review"]["limit"] = review_limit
+    fitting_units = set(fitted.fit_units)
+    fit_settings = np.concatenate([
+        engine.operating_settings for engine in dataset.training if engine.unit in fitting_units
+    ])
     report.update(
         dataset="NASA C-MAPSS FD001",
         archive_sha256=dataset.archive_sha256,
         fit_units=fitted.fit_units,
+        fit_operating_settings=dict(
+            min=fit_settings.min(axis=0).tolist(),
+            max=fit_settings.max(axis=0).tolist(),
+        ),
         calibration_cutoffs=fitted.calibration_cutoffs,
         calibration_target_coverage=CALIBRATION_COVERAGE,
         interval_radius_cycles=model.residual_radius,

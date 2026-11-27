@@ -10,14 +10,18 @@ from turbofan_rul.model import LifeModel, conformal_radius, split_engines
 class ModelTest(unittest.TestCase):
     def test_feature_snapshot_is_independent_of_future_rows(self):
         history = np.arange((WINDOW + 3) * SENSOR_COUNT).reshape(-1, SENSOR_COUNT)
-        prefix = Trajectory(1, history[:WINDOW])
-        extended = Trajectory(1, history)
+        settings = np.tile([0.0, 0.0, 100.0], (len(history), 1))
+        prefix = Trajectory(1, history[:WINDOW], settings[:WINDOW])
+        extended = Trajectory(1, history, settings)
         np.testing.assert_array_equal(features_at(prefix, WINDOW), features_at(extended, WINDOW))
         with self.assertRaisesRegex(ValueError, "at least 20 observed cycles"):
             features_at(prefix, WINDOW - 1)
 
     def test_partition_uses_disjoint_engines(self):
-        engines = tuple(Trajectory(i, np.empty((0, SENSOR_COUNT))) for i in range(1, 101))
+        engines = tuple(
+            Trajectory(i, np.empty((0, SENSOR_COUNT)), np.empty((0, 3)))
+            for i in range(1, 101)
+        )
         fitting, calibration = split_engines(engines)
         self.assertEqual((len(fitting), len(calibration)), (75, 25))
         self.assertFalse(set(e.unit for e in fitting) & set(e.unit for e in calibration))
@@ -32,7 +36,8 @@ class ModelTest(unittest.TestCase):
         model = LifeModel(np.zeros(FEATURE_COUNT), np.ones(FEATURE_COUNT),
                           np.ones(FEATURE_COUNT), 0, 10, 80)
         restored = LifeModel.from_document(model.document())
-        engine = Trajectory(1, np.zeros((WINDOW, SENSOR_COUNT)))
+        engine = Trajectory(1, np.zeros((WINDOW, SENSOR_COUNT)),
+                            np.tile([0.0, 0.0, 100.0], (WINDOW, 1)))
         self.assertEqual(restored.estimate(engine, WINDOW), (20, 10, 30))
         invalid = model.document()
         invalid["scale"][0] = 0
