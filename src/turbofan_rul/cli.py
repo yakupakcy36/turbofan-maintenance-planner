@@ -3,7 +3,6 @@
 import argparse
 import csv
 from dataclasses import asdict
-from hashlib import sha256
 import json
 from pathlib import Path
 import sys
@@ -17,6 +16,7 @@ from .dataset import (
     load_fd001,
     parse_trajectories,
     read_bounded,
+    verify_archive,
 )
 from .evaluation import assess, score
 from .model import CALIBRATION_COVERAGE, LifeModel, fit
@@ -34,13 +34,14 @@ def fetch(path: Path) -> None:
         content = response.read(ARCHIVE_LIMIT + 1)
     if not content.startswith(b"PK\x03\x04") or len(content) > ARCHIVE_LIMIT:
         raise ValueError("NASA response was not a bounded ZIP archive")
+    digest = verify_archive(content)
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=path.parent) as scratch:
         staged = Path(scratch) / "cmapss.zip"
         staged.write_bytes(content)
         staged.replace(path)
-    print(f"SHA-256 {sha256(content).hexdigest()}")
+    print(f"SHA-256 {digest}")
 
 
 def _json(value: dict) -> str:
@@ -79,7 +80,8 @@ def benchmark(archive: Path, output: Path, horizon: int) -> dict:
     with TemporaryDirectory(dir=output.parent) as scratch:
         staging = Path(scratch) / "benchmark"
         staging.mkdir()
-        (staging / "model.json").write_text(_json(model.document()), encoding="utf-8")
+        model_document = {**model.document(), "training_archive_sha256": dataset.archive_sha256}
+        (staging / "model.json").write_text(_json(model_document), encoding="utf-8")
         (staging / "report.json").write_text(_json(report), encoding="utf-8")
         columns = (*FORECAST_COLUMNS, "actual_rul", "age_baseline_rul")
         with (staging / "fleet.csv").open("w", encoding="utf-8", newline="") as stream:

@@ -12,6 +12,9 @@ from zipfile import ZipFile
 
 def verify(archive: Path, output: Path) -> dict:
     report = json.loads((output / "report.json").read_text(encoding="utf-8"))
+    model = json.loads((output / "model.json").read_text(encoding="utf-8"))
+    if model["training_archive_sha256"] != report["archive_sha256"]:
+        raise RuntimeError("model and report must reference the same dataset")
     fit_ids = set(report["fit_units"])
     calibration_ids = {int(unit) for unit in report["calibration_cutoffs"]}
     if len(fit_ids) != 75 or len(calibration_ids) != 25 or fit_ids & calibration_ids:

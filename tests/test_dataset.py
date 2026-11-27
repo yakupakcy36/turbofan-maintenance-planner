@@ -1,6 +1,8 @@
+from hashlib import sha256
 import unittest
+from unittest.mock import patch
 
-from turbofan_rul.dataset import SENSOR_COUNT, parse_trajectories
+from turbofan_rul.dataset import SENSOR_COUNT, parse_trajectories, verify_archive
 
 
 def row(unit, cycle):
@@ -8,6 +10,14 @@ def row(unit, cycle):
 
 
 class DatasetTest(unittest.TestCase):
+    def test_archive_digest_matches_the_expected_bytes(self):
+        content = b"expected archive bytes"
+        digest = sha256(content).hexdigest()
+        with patch("turbofan_rul.dataset.NASA_ARCHIVE_SHA256", digest):
+            self.assertEqual(verify_archive(content), digest)
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                verify_archive(content + b"changed")
+
     def test_parses_whitespace_and_keeps_separate_engine_histories(self):
         raw = ("\n".join((row(1, 1), row(1, 2), row(3, 1))) + "  \n").encode()
         histories = parse_trajectories(raw, "sample")

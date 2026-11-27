@@ -2,6 +2,15 @@
 
 Estimate the **remaining useful life (RUL)** of a simulated turbofan engine from its observed sensor history. Rank a fleet for maintenance review and see how the sensor model compares with an age-only rule.
 
+## FD001 results
+
+| Method | MAE (cycles) | RMSE (cycles) |
+| --- | ---: | ---: |
+| Sensor history | **15.53** | **19.65** |
+| Age-only baseline | 28.39 | 37.96 |
+
+The 30-cycle review rule flagged all 25 test engines due within the horizon and 43 more outside it. The calibrated intervals covered 100 of 100 observed outcomes and averaged 120.47 cycles wide. The wide intervals make the review rule conservative and increase the review workload. [Recorded benchmark](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/45999340143)
+
 ## Reproduce the benchmark
 
 Use Python 3.12 and install the project from the repository directory.
@@ -20,7 +29,7 @@ The benchmark writes a new directory with three files.
 | `fleet.csv` | One row per test engine with the estimate, prediction interval, review status, age baseline and actual RUL |
 | `model.json` | Versioned numeric coefficients and calibration parameters for offline scoring |
 
-You can also download these files from the **fd001-maintenance-report** artifact in a successful [GitHub Actions run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/workflows/verify.yml). The dataset stays outside the repository.
+You can also download these files from the **fd001-maintenance-report** artifact in a successful [GitHub Actions run](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/workflows/verify.yml). The dataset stays outside the repository. Fetch and evaluation check its SHA-256 against the verified NASA archive.
 
 ## Assess an engine history offline
 

@@ -15,6 +15,7 @@ NASA_ARCHIVE_URL = (
     "https://phm-datasets.s3.amazonaws.com/NASA/"
     "6.+Turbofan+Engine+Degradation+Simulation+Data+Set.zip"
 )
+NASA_ARCHIVE_SHA256 = "c9c5dec12a945a82e8bb4446589d7fb3cc057b5e5d81fa1a12e25ee9912ad3b2"
 ARCHIVE_LIMIT = 16 * 1024 * 1024
 TEXT_LIMIT = 8 * 1024 * 1024
 SENSOR_COUNT = 21
@@ -49,6 +50,13 @@ def read_bounded(path: Path, limit: int) -> bytes:
     if len(content) != metadata.st_size:
         raise ValueError(f"{path} changed size while being read")
     return content
+
+
+def verify_archive(content: bytes) -> str:
+    digest = sha256(content).hexdigest()
+    if digest != NASA_ARCHIVE_SHA256:
+        raise ValueError("NASA C-MAPSS archive SHA-256 does not match the verified revision")
+    return digest
 
 
 def _member(archive: ZipFile, name: str, limit: int) -> bytes:
@@ -96,6 +104,7 @@ def parse_trajectories(content: bytes, name: str) -> tuple[Trajectory, ...]:
 
 def load_fd001(path: Path) -> FD001:
     content = read_bounded(path, ARCHIVE_LIMIT)
+    digest = verify_archive(content)
     outer_member = "6. Turbofan Engine Degradation Simulation Data Set/CMAPSSData.zip"
     try:
         with ZipFile(BytesIO(content)) as outer:
@@ -117,4 +126,4 @@ def load_fd001(path: Path) -> FD001:
     if (len(targets) != ENGINE_COUNT or (targets < 0).any()
             or not np.array_equal(targets, np.floor(targets))):
         raise ValueError("expected 100 non-negative integer FD001 test targets")
-    return FD001(training, test, targets.ravel(), sha256(content).hexdigest())
+    return FD001(training, test, targets.ravel(), digest)
