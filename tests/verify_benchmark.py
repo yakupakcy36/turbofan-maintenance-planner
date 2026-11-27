@@ -10,6 +10,47 @@ from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 
+# Reference capture on the pinned FD001 archive at a 30-cycle horizon.
+MINIMUM_DUE_CAPTURE = {10: 10, 25: 22, 50: 25}
+
+
+def verify_review_outcomes(report: dict, fleet: list[dict], actual_by_unit: dict[int, int]) -> None:
+    review = report["review"]
+    horizon = review["horizon_cycles"]
+    units = [int(row["unit"]) for row in fleet]
+    if len(units) != len(actual_by_unit) or set(units) != set(actual_by_unit):
+        raise RuntimeError("fleet must contain each official unit exactly once")
+    if any(int(row["actual_rul"]) != actual_by_unit[int(row["unit"])] for row in fleet):
+        raise RuntimeError("fleet labels must match the official archive")
+
+    due = {unit for unit, actual in actual_by_unit.items() if actual <= horizon}
+    eligible = [int(row["unit"]) for row in fleet if row["review_status"] in {"review", "deferred"}]
+    scheduled = [int(row["unit"]) for row in fleet if row["review_status"] == "review"]
+    if scheduled != eligible[:review["limit"]]:
+        raise RuntimeError("scheduled engines must be the first eligible engines within capacity")
+
+    scenarios = report["review_capacity_scenarios"]
+    if [plan["limit"] for plan in scenarios] != list(MINIMUM_DUE_CAPTURE):
+        raise RuntimeError("capacity scenarios must match the benchmark contract")
+    for plan in [review, *scenarios]:
+        selected = set(eligible[:plan["limit"]])
+        captured = len(selected & due)
+        expected = dict(
+            scheduled=len(selected),
+            due_scheduled=captured,
+            missed_due=len(due) - captured,
+            scheduled_outside_horizon=len(selected - due),
+        )
+        if any(plan[key] != count for key, count in expected.items()):
+            raise RuntimeError(f"review counts do not match the fleet for capacity {plan['limit']}")
+        if horizon == 30 and plan["limit"] in MINIMUM_DUE_CAPTURE:
+            minimum = MINIMUM_DUE_CAPTURE[plan["limit"]]
+            if captured < minimum:
+                raise RuntimeError(
+                    f"FD001 capacity {plan['limit']} captured {captured} due engines; expected at least {minimum}"
+                )
+
+
 def verify(archive: Path, output: Path) -> dict:
     report = json.loads((output / "report.json").read_text(encoding="utf-8"))
     model = json.loads((output / "model.json").read_text(encoding="utf-8"))
@@ -32,6 +73,8 @@ def verify(archive: Path, output: Path) -> dict:
     with ZipFile(archive) as outer:
         inner = outer.read("6. Turbofan Engine Degradation Simulation Data Set/CMAPSSData.zip")
     with ZipFile(BytesIO(inner)) as bundle, TemporaryDirectory() as directory:
+        targets = bundle.read("RUL_FD001.txt").split()
+        actual_by_unit = {unit: int(target) for unit, target in enumerate(targets, start=1)}
         telemetry = Path(directory) / "telemetry.txt"
         telemetry.write_bytes(bundle.read("test_FD001.txt"))
         result = subprocess.run(
@@ -48,9 +91,11 @@ def verify(archive: Path, output: Path) -> dict:
     if review["limit"] is not None and review["scheduled"] != min(review["limit"], review["flagged"]):
         raise RuntimeError("scheduled reviews must fill at most the configured capacity")
     with (output / "fleet.csv").open(encoding="utf-8", newline="") as stream:
-        for actual, expected in zip(from_saved_model, csv.DictReader(stream), strict=True):
-            if actual != {key: expected[key] for key in actual}:
-                raise RuntimeError(f"saved model changed forecast for unit {actual['unit']}")
+        fleet = list(csv.DictReader(stream))
+    for actual, expected in zip(from_saved_model, fleet, strict=True):
+        if actual != {key: expected[key] for key in actual}:
+            raise RuntimeError(f"saved model changed forecast for unit {actual['unit']}")
+    verify_review_outcomes(report, fleet, actual_by_unit)
     return report
 
 
