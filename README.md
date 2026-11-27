@@ -49,6 +49,8 @@ turbofan-rul assess reports/fd001/model.json telemetry.txt --horizon 30 --review
 
 The input uses FD001's 26 whitespace-delimited fields. Each row contains the unit ID, cycle, three operating settings and 21 sensor readings. Sort by unit and supply consecutive observed cycles starting at one. The last observed cycle determines each forecast. Histories shorter than 20 cycles are reported as `insufficient_history`. `test_FD001.txt`, inside the NASA bundle's inner ZIP, can be used as an example input.
 
+The supported ranges for the three operating settings are −0.0088 to 0.0088, −0.0007 to 0.0007, and 99.9999 to 100.0001. They come from the FD001 fitting engines with one input step of tolerance. An out-of-range cycle anywhere in a history yields `unsupported_conditions`, with blank RUL fields and no review slot. Each compatible engine in the same file is still scored. The guard checks operating settings. The evaluation covers the FD001 degradation mode.
+
 Engines are ranked by the lower bound of their interval, then their point estimate and unit ID. The default 30-cycle rule marks an engine `review` if its lower bound is within the horizon. An optional `--review-limit` keeps only the highest-ranked candidates in `review` and marks the others `deferred`. A limit of zero defers every eligible engine.
 
 Pass the same limit to `benchmark` to evaluate a planned workload. In `report.json`, `flagged` counts every eligible engine and `scheduled` counts those assigned a review slot. `missed_due` counts engines due within the horizon without a review slot, including any due engines marked `deferred` or `monitor`.
@@ -58,7 +60,7 @@ Pass the same limit to `benchmark` to evaluate a planned workload. In `report.js
 - **Source.** NASA C-MAPSS FD001 contains 100 simulated run-to-failure training engines and 100 official test engines recorded up to an earlier cutoff. It covers one operating condition and one high-pressure compressor degradation mode. [NASA dataset catalog](https://catalog.data.gov/dataset/cmapss-jet-engine-simulated-data)
 - **Fitting.** Features use the current cycle and the sensor levels and trends over the last 20 observed cycles. Ridge regression is fitted on 75 complete training engines with equal aggregate weight per engine. Training targets are capped at 125 cycles. The baseline subtracts current age from the fit engines' median lifetime and uses the same prediction bounds.
 - **Calibration.** The other 25 training engines each contribute one reproducibly sampled pre-failure cutoff. A 90% split-conformal interval is calibrated from their absolute residuals. Its measured coverage on the official cutoffs is reported separately because the cutoff mechanism can differ.
-- **Holdout.** Official labels enter only the evaluation. Both methods are scored against the original uncapped RUL at one cutoff per test engine. The CI comparison and saved-model round-trip run on GitHub Actions.
+- **Holdout.** Official labels enter only the evaluation. Both methods are scored against the original uncapped RUL at one cutoff per test engine. GitHub Actions checks saved-model parity and recomputes review outcomes from the official labels. At a 30-cycle horizon, the fixed regression minimum is 10, 22 and 25 near-due engines for the 10, 25 and 50 review limits respectively. CI also verifies that an incompatible FD002 engine cannot consume a review slot in a mixed input file.
 
 These results describe the FD001 simulation. Field validation and aircraft maintenance use are outside the project scope.
 

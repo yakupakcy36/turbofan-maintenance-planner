@@ -14,6 +14,32 @@ from zipfile import ZipFile
 MINIMUM_DUE_CAPTURE = {10: 10, 25: 22, 50: 25}
 
 
+def assess_from_disk(model: Path, telemetry: Path, *options: str) -> list[dict]:
+    result = subprocess.run(
+        ["turbofan-rul", "assess", str(model), str(telemetry), *options],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    return list(csv.DictReader(StringIO(result.stdout)))
+
+
+def verify_mixed_regimes(bundle: ZipFile, model: Path, telemetry: Path) -> None:
+    compatible = [
+        line for line in bundle.read("test_FD001.txt").splitlines()
+        if line.strip() and line.split(maxsplit=1)[0] == b"1"
+    ]
+    incompatible = [
+        b"101 " + line.split(maxsplit=1)[1] for line in bundle.read("test_FD002.txt").splitlines()
+        if line.strip() and line.split(maxsplit=1)[0] == b"1"
+    ]
+    telemetry.write_bytes(b"\n".join(compatible + incompatible) + b"\n")
+    results = assess_from_disk(model, telemetry, "--horizon", "125", "--review-limit", "1")
+    statuses = [(row["unit"], row["review_status"]) for row in results]
+    if statuses != [("1", "review"), ("101", "unsupported_conditions")]:
+        raise RuntimeError(f"unexpected mixed-regime plan: {statuses}")
+    if any(results[1][field] for field in ("estimate", "lower", "upper")):
+        raise RuntimeError("unsupported operating conditions must have no RUL forecast")
+
+
 def verify_review_outcomes(report: dict, fleet: list[dict], actual_by_unit: dict[int, int]) -> None:
     review = report["review"]
     horizon = review["horizon_cycles"]
@@ -77,11 +103,9 @@ def verify(archive: Path, output: Path) -> dict:
         actual_by_unit = {unit: int(target) for unit, target in enumerate(targets, start=1)}
         telemetry = Path(directory) / "telemetry.txt"
         telemetry.write_bytes(bundle.read("test_FD001.txt"))
-        result = subprocess.run(
-            ["turbofan-rul", "assess", str(output / "model.json"), str(telemetry), *options],
-            check=True, capture_output=True, text=True, timeout=30,
-        )
-    from_saved_model = list(csv.DictReader(StringIO(result.stdout)))
+        model_path = output / "model.json"
+        from_saved_model = assess_from_disk(model_path, telemetry, *options)
+        verify_mixed_regimes(bundle, model_path, telemetry)
     if len(from_saved_model) != 100:
         raise RuntimeError("saved model must score all 100 test engines")
     statuses = [row["review_status"] for row in from_saved_model]

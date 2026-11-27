@@ -20,6 +20,9 @@ ARCHIVE_LIMIT = 16 * 1024 * 1024
 TEXT_LIMIT = 8 * 1024 * 1024
 SENSOR_COUNT = 21
 ENGINE_COUNT = 100
+# FD001 fitting-engine extrema from run 46001071161, with one 0.0001 input step of tolerance.
+FD001_SETTINGS_MIN = (-0.0088, -0.0007, 99.9999)
+FD001_SETTINGS_MAX = (0.0088, 0.0007, 100.0001)
 
 
 @dataclass(frozen=True)
@@ -39,6 +42,13 @@ class FD001:
     test: tuple[Trajectory, ...]
     test_rul: np.ndarray
     archive_sha256: str
+
+
+def supports_fd001_conditions(engine: Trajectory) -> bool:
+    settings = engine.operating_settings
+    return settings.shape == (engine.cycles, 3) and bool(
+        np.all((settings >= FD001_SETTINGS_MIN) & (settings <= FD001_SETTINGS_MAX))
+    )
 
 
 def read_bounded(path: Path, limit: int) -> bytes:

@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from .dataset import Trajectory
+from .dataset import Trajectory, supports_fd001_conditions
 from .features import WINDOW
 from .model import LifeModel
 
@@ -32,6 +32,9 @@ def assess(
 ) -> list[Forecast]:
     forecasts = []
     for engine in engines:
+        if not supports_fd001_conditions(engine):
+            forecasts.append(Forecast(engine.unit, engine.cycles, "unsupported_conditions"))
+            continue
         if engine.cycles < WINDOW:
             forecasts.append(Forecast(engine.unit, engine.cycles, "insufficient_history"))
             continue
@@ -89,7 +92,7 @@ def _review_counts(forecasts: list[Forecast], due: np.ndarray) -> dict:
 
 def score(model: LifeModel, forecasts: list[Forecast], actual_by_unit: dict, horizon: int) -> dict:
     if any(item.estimate is None for item in forecasts):
-        raise ValueError("all official test engines must have enough history to score")
+        raise ValueError("all official test engines must meet FD001 conditions and history requirements")
     actual = np.asarray([actual_by_unit[item.unit] for item in forecasts])
     point = np.asarray([item.estimate for item in forecasts])
     lower = np.asarray([item.lower for item in forecasts])

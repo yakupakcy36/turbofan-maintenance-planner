@@ -65,3 +65,14 @@ class EvaluationTest(unittest.TestCase):
         self.assertEqual(expanded["limit"], 10)
         self.assertEqual(expanded["due_scheduled"], 1)
         self.assertEqual(expanded["missed_due"], 1)
+
+    def test_unsupported_conditions_never_take_a_review_slot(self):
+        supported = trajectory(2, 80)
+        outside_fd001 = trajectory(1, 95)
+        outside_fd001.operating_settings[0, 0] = 20.0
+
+        ranked = assess(self.model, (outside_fd001, supported), 30, review_limit=1)
+        self.assertEqual([(row.unit, row.review_status) for row in ranked],
+                         [(2, "review"), (1, "unsupported_conditions")])
+        self.assertEqual((ranked[1].estimate, ranked[1].lower, ranked[1].upper),
+                         (None, None, None))
