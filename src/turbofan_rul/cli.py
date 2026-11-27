@@ -57,16 +57,19 @@ def _forecast_rows(forecasts):
         yield row
 
 
-def benchmark(archive: Path, output: Path, horizon: int) -> dict:
+def benchmark(
+    archive: Path, output: Path, horizon: int, *, review_limit: int | None = None
+) -> dict:
     if output.exists():
         raise ValueError("benchmark output directory already exists")
     dataset = load_fd001(archive)
     fitted = fit(dataset.training)
     model = fitted.model
-    forecasts = assess(model, dataset.test, horizon)
+    forecasts = assess(model, dataset.test, horizon, review_limit=review_limit)
     actual = {engine.unit: int(target) for engine, target in
               zip(dataset.test, dataset.test_rul, strict=True)}
     report = score(model, forecasts, actual, horizon)
+    report["review"]["limit"] = review_limit
     report.update(
         dataset="NASA C-MAPSS FD001",
         archive_sha256=dataset.archive_sha256,
@@ -104,6 +107,13 @@ def _horizon(value: str) -> int:
     return cycles
 
 
+def _review_limit(value: str) -> int:
+    limit = int(value)
+    if limit < 0:
+        raise argparse.ArgumentTypeError("review limit must be non-negative")
+    return limit
+
+
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -117,18 +127,25 @@ def main(argv=None) -> None:
     inference.add_argument("telemetry", type=Path, help="whitespace-delimited FD001-style rows")
     for command in (evaluate, inference):
         command.add_argument("--horizon", type=_horizon, default=DEFAULT_HORIZON)
+        command.add_argument(
+            "--review-limit", type=_review_limit, help="maximum number of engines to review"
+        )
     args = parser.parse_args(argv)
     try:
         if args.command == "fetch":
             fetch(args.archive)
         elif args.command == "benchmark":
-            print(_json(benchmark(args.archive, args.out, args.horizon)), end="")
+            report = benchmark(
+                args.archive, args.out, args.horizon, review_limit=args.review_limit
+            )
+            print(_json(report), end="")
         else:
             model = LifeModel.from_document(json.loads(read_bounded(args.model, MODEL_LIMIT)))
             raw = read_bounded(args.telemetry, TEXT_LIMIT)
             engines = parse_trajectories(raw, str(args.telemetry))
             writer = csv.DictWriter(sys.stdout, fieldnames=FORECAST_COLUMNS, lineterminator="\n")
-            rows = list(_forecast_rows(assess(model, engines, args.horizon)))
+            plan = assess(model, engines, args.horizon, review_limit=args.review_limit)
+            rows = list(_forecast_rows(plan))
             writer.writeheader()
             writer.writerows(rows)
     except (OSError, ValueError) as exc:

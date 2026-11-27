@@ -32,3 +32,31 @@ class EvaluationTest(unittest.TestCase):
         self.assertEqual(report["interval"]["empirical_coverage"], 1)
         self.assertEqual(report["review"]["flagged_outside_horizon"], 1)
         self.assertEqual(report["review"]["missed_due"], 0)
+
+    def test_review_limit_uses_stable_order_and_keeps_other_statuses(self):
+        engines = tuple(Trajectory(unit, np.zeros((cycles, SENSOR_COUNT)))
+                        for unit, cycles in ((4, 19), (3, 40), (2, 80), (1, 80)))
+        limited = assess(self.model, engines, 30, review_limit=1)
+        self.assertEqual([row.unit for row in limited], [1, 2, 3, 4])
+        self.assertEqual([row.review_status for row in limited],
+                         ["review", "deferred", "monitor", "insufficient_history"])
+        no_slots = assess(self.model, engines, 30, review_limit=0)
+        self.assertEqual([row.review_status for row in no_slots],
+                         ["deferred", "deferred", "monitor", "insufficient_history"])
+        with self.assertRaisesRegex(ValueError, "non-negative"):
+            assess(self.model, engines, 30, review_limit=-1)
+
+    def test_capacity_report_distinguishes_flags_from_reviewed_engines(self):
+        engines = tuple(Trajectory(i, np.zeros((cycles, SENSOR_COUNT)))
+                        for i, cycles in enumerate((90, 80, 40), start=1))
+        limited = assess(self.model, engines, 30, review_limit=1)
+        report = score(self.model, limited, {1: 31, 2: 29, 3: 28}, 30)
+        review = report["review"]
+        self.assertEqual(review["flagged"], 2)
+        self.assertEqual(review["scheduled"], 1)
+        self.assertEqual(review["due_deferred"], 1)
+        self.assertEqual(review["missed_due"], 2)
+        expanded = report["review_capacity_scenarios"][0]
+        self.assertEqual(expanded["limit"], 10)
+        self.assertEqual(expanded["due_scheduled"], 1)
+        self.assertEqual(expanded["missed_due"], 1)

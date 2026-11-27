@@ -24,18 +24,29 @@ def verify(archive: Path, output: Path) -> dict:
     if report["sensor_model"]["mae_cycles"] >= report["age_baseline"]["mae_cycles"]:
         raise RuntimeError("sensor model must improve on the age-only MAE")
 
+    review = report["review"]
+    options = ["--horizon", str(review["horizon_cycles"])]
+    if review["limit"] is not None:
+        options.extend(("--review-limit", str(review["limit"])))
+
     with ZipFile(archive) as outer:
         inner = outer.read("6. Turbofan Engine Degradation Simulation Data Set/CMAPSSData.zip")
     with ZipFile(BytesIO(inner)) as bundle, TemporaryDirectory() as directory:
         telemetry = Path(directory) / "telemetry.txt"
         telemetry.write_bytes(bundle.read("test_FD001.txt"))
         result = subprocess.run(
-            ["turbofan-rul", "assess", str(output / "model.json"), str(telemetry)],
+            ["turbofan-rul", "assess", str(output / "model.json"), str(telemetry), *options],
             check=True, capture_output=True, text=True, timeout=30,
         )
     from_saved_model = list(csv.DictReader(StringIO(result.stdout)))
     if len(from_saved_model) != 100:
         raise RuntimeError("saved model must score all 100 test engines")
+    statuses = [row["review_status"] for row in from_saved_model]
+    observed_counts = (statuses.count("review"), statuses.count("deferred"))
+    if observed_counts != (review["scheduled"], review["deferred"]):
+        raise RuntimeError("saved model must reproduce the review and deferral counts")
+    if review["limit"] is not None and review["scheduled"] != min(review["limit"], review["flagged"]):
+        raise RuntimeError("scheduled reviews must fill at most the configured capacity")
     with (output / "fleet.csv").open(encoding="utf-8", newline="") as stream:
         for actual, expected in zip(from_saved_model, csv.DictReader(stream), strict=True):
             if actual != {key: expected[key] for key in actual}:
@@ -46,5 +57,6 @@ def verify(archive: Path, output: Path) -> dict:
 if __name__ == "__main__":
     results = verify(Path(sys.argv[1]), Path(sys.argv[2]))
     print(json.dumps({key: results[key] for key in (
-        "engines", "archive_sha256", "sensor_model", "age_baseline", "interval", "review"
+        "engines", "archive_sha256", "sensor_model", "age_baseline", "interval", "review",
+        "review_capacity_scenarios",
     )}, indent=2))

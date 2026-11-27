@@ -36,6 +36,10 @@ jobs:
           printf '## FD001 evaluation\n\n```json\n' >> "$GITHUB_STEP_SUMMARY"
           python tests/verify_benchmark.py "$RUNNER_TEMP/cmapss.zip" reports/fd001 | tee -a "$GITHUB_STEP_SUMMARY"
           printf '```\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify a 25-engine review limit
+        run: |
+          turbofan-rul benchmark "$RUNNER_TEMP/cmapss.zip" --review-limit 25 --out "$RUNNER_TEMP/capacity-25"
+          python tests/verify_benchmark.py "$RUNNER_TEMP/cmapss.zip" "$RUNNER_TEMP/capacity-25"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: fd001-maintenance-report

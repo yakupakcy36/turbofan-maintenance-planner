@@ -25,7 +25,7 @@ The benchmark writes a new directory with three files.
 
 | File | Contents |
 | --- | --- |
-| `report.json` | Dataset SHA-256, engine splits, MAE, RMSE, interval coverage and maintenance review counts |
+| `report.json` | Dataset SHA-256, engine splits, error metrics, interval coverage and review outcomes at capacities of 10, 25 and 50 |
 | `fleet.csv` | One row per test engine with the estimate, prediction interval, review status, age baseline and actual RUL |
 | `model.json` | Versioned numeric coefficients and calibration parameters for offline scoring |
 
@@ -35,11 +35,14 @@ You can also download these files from the **fd001-maintenance-report** artifact
 
 ```sh
 turbofan-rul assess reports/fd001/model.json telemetry.txt --horizon 30 > assessment.csv
+turbofan-rul assess reports/fd001/model.json telemetry.txt --horizon 30 --review-limit 25 > queue.csv
 ```
 
 The input uses FD001's 26 whitespace-delimited fields. Each row contains the unit ID, cycle, three operating settings and 21 sensor readings. Sort by unit and supply consecutive observed cycles starting at one. The last observed cycle determines each forecast. Histories shorter than 20 cycles are reported as `insufficient_history`. `test_FD001.txt`, inside the NASA bundle's inner ZIP, can be used as an example input.
 
-Engines are ranked by the lower bound of their interval, then their point estimate. The default 30-cycle rule marks an engine `review` if the lower bound is within the horizon. The report counts both missed due engines and flags outside the horizon so the cost of a wider interval is visible.
+Engines are ranked by the lower bound of their interval, then their point estimate and unit ID. The default 30-cycle rule marks an engine `review` if its lower bound is within the horizon. An optional `--review-limit` keeps only the highest-ranked candidates in `review` and marks the others `deferred`. A limit of zero defers every eligible engine.
+
+Pass the same limit to `benchmark` to evaluate a planned workload. In `report.json`, `flagged` counts every eligible engine and `scheduled` counts those assigned a review slot. `missed_due` counts engines due within the horizon without a review slot, including any due engines marked `deferred` or `monitor`.
 
 ## Evaluation design
 
