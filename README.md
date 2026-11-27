@@ -9,7 +9,16 @@ Estimate the **remaining useful life (RUL)** of a simulated turbofan engine from
 | Sensor history | **15.53** | **19.65** |
 | Age-only baseline | 28.39 | 37.96 |
 
-The 30-cycle review rule flagged all 25 test engines due within the horizon and 43 more outside it. The calibrated intervals covered 100 of 100 observed outcomes and averaged 120.47 cycles wide. The wide intervals make the review rule conservative and increase the review workload. [Recorded benchmark](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/45999340143)
+### Review capacity at a 30-cycle horizon
+
+| Review limit | Scheduled | Due engines scheduled | Due engines without a slot | Scheduled outside the horizon |
+| --- | ---: | ---: | ---: | ---: |
+| 10 | 10 | 10 of 25 | 15 | 0 |
+| 25 | 25 | 22 of 25 | 3 | 3 |
+| 50 | 50 | 25 of 25 | 0 | 25 |
+| Unlimited | 68 | 25 of 25 | 0 | 43 |
+
+The calibrated intervals covered 100 of 100 observed outcomes and averaged 120.47 cycles wide. The wide intervals make the review rule conservative and increase the review workload. [Recorded benchmark and downloadable report](https://github.com/yakupakcy36/turbofan-maintenance-planner/actions/runs/46000102681)
 
 ## Reproduce the benchmark
 
